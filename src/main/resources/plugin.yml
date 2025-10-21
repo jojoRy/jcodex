@@ -1,0 +1,28 @@
+name: jcodex
+version: '1.0-SNAPSHOT'
+main: kr.jjory.jcodex.JCodexPlugin
+api-version: '1.21'
+author: Jjory
+depend: [Vault]
+softdepend: [MMOItems, ItemsAdder]
+description: 마인크래프트 서버를 위한 종합 도감/수집 플러그인입니다.
+
+commands:
+  도감:
+    description: 도감 GUI를 엽니다.
+    aliases: [jcodex, codex]
+    permission: jcodex.user
+  도감설정:
+    description: 관리자용 도감 GUI를 엽니다.
+    aliases: [jcodexadmin, codexadmin]
+    permission: jcodex.admin
+  도감리로드:
+    description: 설정 파일에서 도감 설정을 다시 불러옵니다.
+    aliases: [jcodexreload, codexreload]
+    permission: jcodex.admin
+  도감내보내기:
+    description: 데이터베이스의 도감 데이터를 YAML 파일로 내보냅니다.
+    aliases: [jcodexexport, codexexport]
+    permission: jcodex.admin
+
+

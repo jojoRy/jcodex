@@ -1,0 +1,60 @@
+# JCodex 플러그인 메인 설정 파일
+
+general:
+  language: "ko_KR"
+  debug: false
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  database: "jcodex"
+  username: "root"
+  password: "password"
+  pool-size: 10
+
+redis:
+  enabled: true
+  host: "127.0.0.1"
+  port: 6379
+  channel: "jcodex_sync"
+
+multi-server:
+  enabled: true
+  mode: "MAIN" # MAIN 또는 SUB
+  sync-interval: 30 # Redis 비활성화 시 폴백 동기화 주기 (초)
+
+register:
+  consume-item: false # 아이템 등록 시 소모 여부
+
+stats:
+  # 등록 가능한 MMOItems 스탯 목록
+  # 이 순서대로 보상 설정 GUI에 표시됩니다. (최대 7개)
+  # ATTACK_DAMAGE, MAGIC_DAMAGE, MAX_HEALTH, DEFENSE, MOVEMENT_SPEED,
+  # CRITICAL_STRIKE_CHANCE, CRITICAL_STRIKE_POWER, PVP_DAMAGE, PVE_DAMAGE,
+  # PROJECTILE_DAMAGE, SKILL_DAMAGE, DAMAGE_REDUCTION, BLOCK_CHANCE,
+  # HEALTH_REGENERATION, DODGE_RATING, PARRY_RATING
+  order:
+    - "ATTACK_DAMAGE"
+    - "MAX_HEALTH"
+    - "DEFENSE"
+    - "MOVEMENT_SPEED"
+    - "CRITICAL_STRIKE_CHANCE"
+
+  # 각 스탯의 상세 설정
+  defs:
+    ATTACK_DAMAGE:
+      display: "공격력"
+      decimals: 1
+    MAX_HEALTH:
+      display: "최대 체력"
+      decimals: 1
+    DEFENSE:
+      display: "방어력"
+      decimals: 1
+    MOVEMENT_SPEED:
+      display: "이동 속도"
+      decimals: 2
+    CRITICAL_STRIKE_CHANCE:
+      display: "치명타 확률"
+      decimals: 1
+

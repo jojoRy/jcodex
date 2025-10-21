@@ -1,0 +1,35 @@
+# 도감에 등록될 아이템 목록입니다.
+# /도감리로드 명령어로 DB에 반영됩니다. (MAIN 서버 전용)
+#
+# id: 아이템의 고유 ID (예: minecraft:diamond, itemsadder:ruby_sword)
+# display_name: GUI에 표시될 이름 (색상 코드 & 사용 가능)
+# category: FARMER, MINER, FISHER, COOK, WARRIOR, MISC 중 하나여야 합니다.
+# reward: 도감 해금 시 지급될 보상입니다.
+#   money: 돈 보상 (Vault 플러그인 필요)
+#   command: 실행될 명령어 (%player% 변수 사용 가능)
+#   stats: 스탯 보상 (MMOItems 플러그인 필요)
+#     스탯_이름: 값
+
+items:
+  - id: "minecraft:diamond"
+    display_name: "&b다이아몬드"
+    category: "MINER"
+    reward:
+      money: 500
+      stats:
+        MAX_HEALTH: 0.5
+
+  - id: "minecraft:apple"
+    display_name: "&c사과"
+    category: "FARMER"
+    reward:
+      money: 10
+      command: "say %player%님이 사과를 수집했습니다!"
+
+  - id: "minecraft:iron_sword"
+    display_name: "&7철 검"
+    category: "WARRIOR"
+    reward:
+      stats:
+        ATTACK_DAMAGE: 0.2
+

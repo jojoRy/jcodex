@@ -1,0 +1,28 @@
+# 도감 달성도에 따른 보상 목록입니다.
+# /도감리로드 명령어로 DB에 반영됩니다. (MAIN 서버 전용)
+#
+# type: CATEGORY (특정 카테고리 달성률) 또는 GLOBAL (전체 달성률)
+# category: type이 CATEGORY일 경우, 대상 카테고리 ID (FARMER, MINER 등)
+# percent: 보상을 받기 위해 달성해야 할 퍼센트 (0~100)
+# reward: 지급될 보상 내용 (돈, 명령어 등)
+
+milestones:
+  - type: CATEGORY
+    category: "MINER"
+    percent: 100
+    reward:
+      money: 5000
+      command: "broadcast %player%님이 광부 도감을 100% 달성했습니다!"
+
+  - type: GLOBAL
+    percent: 50
+    reward:
+      money: 10000
+      command: "broadcast %player%님이 전체 도감의 50%를 달성했습니다!"
+
+  - type: GLOBAL
+    percent: 100
+    reward:
+      money: 100000
+      command: "broadcast &e&l[JCodex] &f%player%님께서 마침내 모든 도감을 완성하셨습니다! &b축하합니다!"
+
