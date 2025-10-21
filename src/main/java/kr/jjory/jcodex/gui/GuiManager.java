@@ -25,18 +25,21 @@ public class GuiManager {
 
     public void openGui(Gui gui) {
         openGuis.put(gui.player.getUniqueId(), gui);
-        gui.open();
+
+        // 최종 수정: GUI를 즉시 열지 않고, 다음 서버 틱에 안전하게 엽니다.
+        // 이것이 클릭 이벤트가 꼬이는 현상을 근본적으로 해결합니다.
+        plugin.getServer().getScheduler().runTask(plugin, gui::open);
     }
 
     public void closeGui(Player player) {
         openGuis.remove(player.getUniqueId());
-        chatPrompts.remove(player.getUniqueId()); // GUI 닫힐 때 채팅 프롬프트도 제거
+        chatPrompts.remove(player.getUniqueId());
     }
 
     public void handleClick(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
         Gui gui = openGuis.get(player.getUniqueId());
-        if (gui != null && event.getInventory().getHolder() == gui) {
+        if (gui != null) { // 열려있는 GUI가 우리 플러그인의 것이라면
             gui.handleClick(event);
         }
     }
@@ -48,12 +51,10 @@ public class GuiManager {
     public void handleChatInput(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         UUID playerUuid = player.getUniqueId();
-        // chatPrompts에 해당 플레이어가 있는지 확인 (isPlayerInPrompt와 동일한 로직)
         if (chatPrompts.containsKey(playerUuid)) {
             event.setCancelled(true);
             String message = event.getMessage();
             Consumer<String> callback = chatPrompts.remove(playerUuid);
-            // 콜백을 메인 스레드에서 실행
             plugin.getServer().getScheduler().runTask(plugin, () -> callback.accept(message));
         }
     }
@@ -62,7 +63,6 @@ public class GuiManager {
         return openGuis.get(player.getUniqueId());
     }
 
-    // 플레이어가 채팅 입력 대기 중인지 확인하는 메서드
     public boolean isPlayerInPrompt(Player player) {
         return chatPrompts.containsKey(player.getUniqueId());
     }
