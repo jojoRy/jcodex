@@ -86,7 +86,7 @@ public class RewardSettingGUI extends Gui {
         // 돈 보상 (슬롯 1)
         ItemStack moneyItem = ItemUtil.createItem(Material.GOLD_NUGGET, "§6돈 보상 설정");
         ItemMeta moneyMeta = moneyItem.getItemMeta();
-        moneyMeta.setLore(List.of("§7현재 값: §e" + codexItem.getReward().getMoney(), "§a우클릭: §f금액 설정", "§cShift+우클릭: §f초기화"));
+        moneyMeta.setLore(List.of("§7현재 값: §e" + codexItem.getReward().getMoney(), "§a좌클릭: §f금액 설정", "§cShift+우클릭: §f초기화"));
         moneyItem.setItemMeta(moneyMeta);
         inventory.setItem(MONEY_REWARD_SLOT, moneyItem);
 
@@ -154,7 +154,7 @@ public class RewardSettingGUI extends Gui {
         // 이 메서드가 호출되기 전에 이미 event.setCancelled(true)가 실행되었지만,
         // 코드의 명확성을 위해 한 번 더 호출합니다.
         event.setCancelled(true);
-        if (event.getClick() == ClickType.RIGHT) {
+        if (event.getClick() == ClickType.LEFT) {
             promptForMoney();
         } else if (event.getClick() == ClickType.SHIFT_RIGHT) {
             codexItem.getReward().setMoney(0);

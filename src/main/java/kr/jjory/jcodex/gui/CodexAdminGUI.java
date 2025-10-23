@@ -151,6 +151,7 @@ public class CodexAdminGUI extends Gui {
         Inventory clickedInventory = event.getClickedInventory();
         if (clickedInventory == null) return;
 
+        // GUI 상단 클릭 (도감 GUI)
         if (clickedInventory.getHolder() == this) {
             event.setCancelled(true);
             int slot = event.getRawSlot();
@@ -182,7 +183,7 @@ public class CodexAdminGUI extends Gui {
             for (int i = 0; i < ITEM_SLOTS.length; i++) {
                 if (slot == ITEM_SLOTS[i]) {
                     int itemIndex = (currentPage * itemsPerPage) + i;
-                    if (itemIndex < itemsToShow.size()) {
+                    if (itemIndex < itemsToShow.size()) { // 기존 아이템 클릭
                         CodexItem selectedCodexItem = itemsToShow.get(itemIndex);
                         if (event.getClick() == ClickType.LEFT) {
                             plugin.getGuiManager().openGui(new RewardSettingGUI(player, plugin, selectedCodexItem, this));
@@ -190,11 +191,13 @@ public class CodexAdminGUI extends Gui {
                             handleItemDeletion(selectedCodexItem);
                         }
                     }
+                    // 빈 슬롯 클릭은 아무 동작 없음 (하단 인벤토리 클릭으로 처리)
                     return;
                 }
             }
+            // GUI 하단 클릭 (플레이어 인벤토리)
         } else if (clickedInventory.getHolder() == player) {
-            event.setCancelled(true);
+            event.setCancelled(true); // 하단 인벤토리 클릭도 기본 동작 방지
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem != null && !clickedItem.getType().isAir()) {
                 handleItemRegistration(clickedItem);
@@ -223,7 +226,7 @@ public class CodexAdminGUI extends Gui {
                     + "§e" + categoryToRegister.getDisplayName() + "§a 카테고리에 신규 등록되었습니다.");
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
             plugin.getSyncService().publishItemUpdate(newItem);
-            plugin.getServer().getScheduler().runTask(plugin, this::refresh);
+            plugin.getServer().getScheduler().runTask(plugin, this::refresh); // 등록 후 GUI 새로고침
         }).exceptionally(ex -> {
             player.sendMessage("§c아이템 등록 중 오류가 발생했습니다: " + ex.getMessage());
             return null;
@@ -240,12 +243,18 @@ public class CodexAdminGUI extends Gui {
                 codexRepository.deleteItem(itemToDelete.getItemId()).thenRun(() -> {
                     player.sendMessage("§a아이템이 성공적으로 삭제되었습니다.");
                     plugin.getSyncService().publishItemDelete(itemToDelete.getItemId());
-                    plugin.getServer().getScheduler().runTask(plugin, this::loadDataAndDraw);
+                    // 수정: 삭제 성공 후 GUI를 새로고침하고 다시 엽니다.
+                    plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        loadDataAndDraw(); // 데이터 새로고침
+                        plugin.getGuiManager().openGui(this); // GUI 다시 열기
+                    });
                 });
             } else {
                 player.sendMessage("§e삭제가 취소되었습니다.");
+                // 수정: 삭제 취소 시에도 GUI를 다시 엽니다.
                 plugin.getServer().getScheduler().runTask(plugin, () -> plugin.getGuiManager().openGui(this));
             }
+            // 수정: 콜백 외부의 GUI 열기 코드는 제거합니다.
         });
     }
 
