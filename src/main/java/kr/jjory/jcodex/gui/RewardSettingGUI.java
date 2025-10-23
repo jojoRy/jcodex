@@ -4,7 +4,8 @@ import kr.jjory.jcodex.JCodexPlugin;
 import kr.jjory.jcodex.config.MainConfig;
 import kr.jjory.jcodex.model.CodexItem;
 import kr.jjory.jcodex.repository.CodexRepository;
-import kr.jjory.jcodex.util.ItemUtil;
+import kr.jjory.jcodex.util.ItemUtil; // ItemUtil은 이제 필요 없음
+import kr.jjory.jcodex.util.Lang;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -17,6 +18,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 도감 아이템의 해금 보상을 설정하는 GUI 클래스입니다.
@@ -37,7 +39,7 @@ public class RewardSettingGUI extends Gui {
 
 
     public RewardSettingGUI(Player player, JCodexPlugin plugin, CodexItem codexItem, Gui parentGui) {
-        super(player, 27, "§6해금 보상 설정");
+        super(player, 18, "reward_setting", plugin.getConfigManager().getGuiConfig());
         this.plugin = plugin;
         this.codexRepository = new CodexRepository(plugin);
         this.codexItem = codexItem;
@@ -57,7 +59,7 @@ public class RewardSettingGUI extends Gui {
     }
 
     private void drawBackground() {
-        ItemStack background = ItemUtil.createItem(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack background = createGuiItem("items.background");
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, background);
         }
@@ -69,25 +71,35 @@ public class RewardSettingGUI extends Gui {
         if (currentItemRewards != null && !currentItemRewards.isEmpty()) {
             ItemStack display = currentItemRewards.get(0).clone();
             ItemMeta meta = display.getItemMeta();
-            List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-            lore.add(" ");
-            if (currentItemRewards.size() > 1) {
-                lore.add("§7(총 " + currentItemRewards.size() + "개의 아이템 보상)");
+            String itemKey = ItemUtil.getItemKey(display);
+            String translatedName = Lang.translate(player, itemKey);
+            if (translatedName != null && meta != null) {
+                meta.setDisplayName(colorize(translatedName)); // 번역된 이름 설정
             }
-            lore.add("§a클릭하여 보상 아이템 변경");
-            meta.setLore(lore);
-            display.setItemMeta(meta);
+            List<String> lore = meta != null && meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+            List<String> suffix = guiConfig.getStringList("items.reward_item_set.lore_suffix");
+
+            final int count = currentItemRewards.size();
+            suffix = suffix.stream()
+                    .filter(line -> count > 1 || !line.contains("%count%"))
+                    .map(line -> line.replace("%count%", String.valueOf(count)))
+                    .map(this::colorize)
+                    .collect(Collectors.toList());
+            lore.addAll(suffix);
+
+            if (meta != null) {
+                meta.setLore(lore);
+                display.setItemMeta(meta);
+            }
             inventory.setItem(ITEM_REWARD_SLOT, display);
         } else {
-            ItemStack placeholder = ItemUtil.createItem(Material.BARRIER, "§c아이템 보상 없음", List.of("§a클릭하여 보상 아이템 설정"));
+            ItemStack placeholder = createGuiItem("items.reward_item_placeholder");
             inventory.setItem(ITEM_REWARD_SLOT, placeholder);
         }
 
         // 돈 보상 (슬롯 1)
-        ItemStack moneyItem = ItemUtil.createItem(Material.GOLD_NUGGET, "§6돈 보상 설정");
-        ItemMeta moneyMeta = moneyItem.getItemMeta();
-        moneyMeta.setLore(List.of("§7현재 값: §e" + codexItem.getReward().getMoney(), "§a좌클릭: §f금액 설정", "§cShift+우클릭: §f초기화"));
-        moneyItem.setItemMeta(moneyMeta);
+        ItemStack moneyItem = createGuiItem("items.reward_money",
+                "%value%", formatNumber("money", codexItem.getReward().getMoney()));
         inventory.setItem(MONEY_REWARD_SLOT, moneyItem);
 
         // 스탯 보상 (슬롯 2-8, 오른쪽 정렬)
@@ -103,33 +115,33 @@ public class RewardSettingGUI extends Gui {
             double value = currentStats.getOrDefault(statKey, 0.0);
             boolean isEnabled = value != 0;
 
-            ItemStack statItem = ItemUtil.createItem(isEnabled ? Material.LIME_DYE : Material.RED_DYE, "§b" + statDef.getDisplay() + " 보상");
-            ItemMeta statMeta = statItem.getItemMeta();
-            List<String> lore = new ArrayList<>();
-            lore.add(isEnabled ? "§a상태: 활성화됨" : "§c상태: 비활성화됨");
-            lore.add("§7현재 값: §a" + value);
-            lore.add(" ");
-            lore.add("§e좌클릭: §f활성/비활성 전환");
-            lore.add("§e우클릭: §f값 설정 (소수점 가능)");
-            lore.add("§eShift+우클릭: §f초기화");
-            statMeta.setLore(lore);
-            statItem.setItemMeta(statMeta);
+            // 스탯 이름은 번역하지 않음 (config.yml의 display 사용)
+            String statusDisplay = isEnabled ? getMessage("reward_stat_status_enabled") : getMessage("reward_stat_status_disabled");
+
+            ItemStack statItem = createGuiItem("items.reward_stat",
+                    "%stat_name%", statDef.getDisplay(),
+                    "%status_display%", statusDisplay,
+                    "%value%", String.valueOf(value));
+
+            if (!guiConfig.contains("items.reward_stat.material")) {
+                statItem.setType(isEnabled ? Material.LIME_DYE : Material.RED_DYE);
+            }
+
             inventory.setItem(startSlot + i, statItem);
         }
     }
 
     private void drawControls() {
-        ItemStack back = ItemUtil.createItem(Material.BARRIER, "§c뒤로 가기 (저장 안 함)");
+        ItemStack back = createGuiItem("items.back_button");
         for(int slot : BACK_BUTTON_SLOTS) inventory.setItem(slot, back);
 
-        ItemStack save = ItemUtil.createItem(Material.ANVIL, "§a변경사항 저장하기");
+        ItemStack save = createGuiItem("items.save_button");
         for(int slot : SAVE_BUTTON_SLOTS) inventory.setItem(slot, save);
     }
 
     @Override
     public void handleClick(InventoryClickEvent event) {
-        event.setCancelled(true);
-
+        // 수정: 리스너에서 이미 취소했으므로 여기서는 취소 X
         Inventory clickedInventory = event.getClickedInventory();
         if (clickedInventory == null || clickedInventory.getHolder() != this) {
             return;
@@ -151,9 +163,7 @@ public class RewardSettingGUI extends Gui {
     }
 
     private void handleMoneyRewardClick(InventoryClickEvent event) {
-        // 이 메서드가 호출되기 전에 이미 event.setCancelled(true)가 실행되었지만,
-        // 코드의 명확성을 위해 한 번 더 호출합니다.
-        event.setCancelled(true);
+        // 수정: 좌클릭으로 금액 설정
         if (event.getClick() == ClickType.LEFT) {
             promptForMoney();
         } else if (event.getClick() == ClickType.SHIFT_RIGHT) {
@@ -164,9 +174,6 @@ public class RewardSettingGUI extends Gui {
     }
 
     private void handleStatRewardClick(InventoryClickEvent event) {
-        // 이 메서드가 호출되기 전에 이미 event.setCancelled(true)가 실행되었지만,
-        // 코드의 명확성을 위해 한 번 더 호출합니다.
-        event.setCancelled(true);
         int slot = event.getRawSlot();
         MainConfig mainConfig = plugin.getConfigManager().getMainConfig();
         List<String> statsOrder = mainConfig.getStatsOrder();
@@ -200,14 +207,14 @@ public class RewardSettingGUI extends Gui {
 
     private void promptForMoney() {
         player.closeInventory();
-        player.sendMessage("§a[JCodex] 채팅으로 설정할 돈 보상 금액을 입력해주세요. (숫자만)");
+        player.sendMessage(getMessage("admin_reward_prompt_money"));
         plugin.getGuiManager().promptChatInput(player, input -> {
             try {
                 double amount = Double.parseDouble(input);
                 codexItem.getReward().setMoney(amount);
-                player.sendMessage("§a돈 보상이 §e" + amount + "§a(으)로 설정되었습니다.");
+                player.sendMessage(getMessage("admin_reward_set_money", "%amount%", formatNumber("money", amount)));
             } catch (NumberFormatException e) {
-                player.sendMessage("§c잘못된 숫자 형식입니다.");
+                player.sendMessage(getMessage("admin_reward_invalid_number"));
             }
             plugin.getServer().getScheduler().runTask(plugin, () -> plugin.getGuiManager().openGui(this));
         });
@@ -216,14 +223,14 @@ public class RewardSettingGUI extends Gui {
     private void promptForStat(String statKey) {
         player.closeInventory();
         MainConfig.StatDefinition statDef = plugin.getConfigManager().getMainConfig().getStatDefinition(statKey);
-        player.sendMessage("§a[JCodex] 채팅으로 '" + statDef.getDisplay() + "' 스탯 보상 값을 입력해주세요. (소수점 가능)");
+        player.sendMessage(getMessage("admin_reward_prompt_stat", "%stat_name%", statDef.getDisplay()));
         plugin.getGuiManager().promptChatInput(player, input -> {
             try {
                 double value = Double.parseDouble(input);
                 codexItem.getReward().getStats().put(statKey, value);
-                player.sendMessage("§a" + statDef.getDisplay() + " 스탯 보상이 §e" + value + "§a(으)로 설정되었습니다.");
+                player.sendMessage(getMessage("admin_reward_set_stat", "%stat_name%", statDef.getDisplay(), "%value%", String.valueOf(value)));
             } catch (NumberFormatException e) {
-                player.sendMessage("§c잘못된 숫자 형식입니다.");
+                player.sendMessage(getMessage("admin_reward_invalid_number"));
             }
             plugin.getServer().getScheduler().runTask(plugin, () -> plugin.getGuiManager().openGui(this));
         });
@@ -231,7 +238,7 @@ public class RewardSettingGUI extends Gui {
 
     private void saveAndClose() {
         codexRepository.saveOrUpdateItem(codexItem).thenRun(() -> {
-            player.sendMessage("§a보상 설정이 성공적으로 저장되었습니다.");
+            player.sendMessage(getMessage("admin_reward_saved"));
             plugin.getSyncService().publishItemUpdate(codexItem);
             if (parentGui instanceof CodexAdminGUI adminGui) {
                 plugin.getServer().getScheduler().runTask(plugin, adminGui::refresh);

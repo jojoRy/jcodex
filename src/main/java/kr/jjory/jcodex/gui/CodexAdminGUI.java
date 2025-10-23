@@ -6,6 +6,7 @@ import kr.jjory.jcodex.model.CodexItem;
 import kr.jjory.jcodex.model.RewardSpec;
 import kr.jjory.jcodex.repository.CodexRepository;
 import kr.jjory.jcodex.util.ItemUtil;
+import kr.jjory.jcodex.util.Lang; // Lang 클래스 임포트
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -15,7 +16,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,7 +29,7 @@ public class CodexAdminGUI extends Gui {
     private final CodexRepository codexRepository;
     private final Gui parentGui;
 
-    // 기획서에 명시된 슬롯 레이아웃
+    // 기획서 슬롯 레이아웃
     private static final int[] ITEM_SLOTS = {
             0, 1, 2, 3, 4, 5,
             9, 10, 11, 12, 13, 14,
@@ -51,7 +51,7 @@ public class CodexAdminGUI extends Gui {
     private CodexCategory currentFilter = CodexCategory.FARMER;
 
     public CodexAdminGUI(Player player, JCodexPlugin plugin, Gui parentGui) {
-        super(player, 54, "§e도감 설정");
+        super(player, 54, "admin", plugin.getConfigManager().getGuiConfig());
         this.plugin = plugin;
         this.codexRepository = new CodexRepository(plugin);
         this.parentGui = parentGui;
@@ -80,7 +80,7 @@ public class CodexAdminGUI extends Gui {
     }
 
     private void drawBackground() {
-        ItemStack background = ItemUtil.createItem(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack background = createGuiItem("items.background");
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, background);
         }
@@ -95,36 +95,43 @@ public class CodexAdminGUI extends Gui {
             if (itemIndex < itemsToShow.size()) {
                 CodexItem codexItem = itemsToShow.get(itemIndex);
                 ItemStack displayItem = ItemUtil.createItemFromCodexItem(codexItem);
-                ItemMeta meta = displayItem.getItemMeta();
-                meta.setDisplayName("§e" + codexItem.getDisplayName());
 
-                List<String> lore = new ArrayList<>();
-                lore.add("§7아이템 ID: " + codexItem.getItemId());
-                lore.add("§7카테고리: " + codexItem.getCategory().getDisplayName());
-                lore.add(" ");
-                lore.add("§a좌클릭: §f보상 설정");
-                lore.add("§cShift + 우클릭: §f아이템 삭제");
+                // --- 아이템 이름만 번역 ---
+                String itemKey = ItemUtil.getItemKey(displayItem);
+                String translatedName = Lang.translate(player, itemKey);
+                String finalItemName = (translatedName != null) ? translatedName : codexItem.getDisplayName();
+                // --- --- ---
 
-                meta.setLore(lore);
-                displayItem.setItemMeta(meta);
+                // gui.yml에서 아이템 정보 가져오기 (번역된 이름 사용)
+                ItemStack guiInfoItem = createGuiItem("items.admin_codex_item",
+                        "%item_name%", finalItemName, // 번역된 이름 사용
+                        "%item_id%", codexItem.getItemId(),
+                        "%category_name%", codexItem.getCategory().getDisplayName());
+
+                ItemMeta displayMeta = displayItem.getItemMeta();
+                ItemMeta guiMeta = guiInfoItem.getItemMeta();
+
+                // 실제 아이템에 gui.yml의 이름과 설명 적용
+                if (displayMeta != null && guiMeta != null) {
+                    displayMeta.setDisplayName(guiMeta.getDisplayName());
+                    displayMeta.setLore(guiMeta.getLore());
+                    displayItem.setItemMeta(displayMeta);
+                }
                 inventory.setItem(slot, displayItem);
 
             } else {
-                ItemStack addItem = ItemUtil.createItem(Material.LIME_STAINED_GLASS_PANE, "§a아이템 신규 등록");
-                ItemMeta meta = addItem.getItemMeta();
-                meta.setLore(List.of("§7아래 인벤토리에서 아이템을 클릭하여", "§7이 카테고리에 신규 등록하세요."));
-                addItem.setItemMeta(meta);
+                ItemStack addItem = createGuiItem("items.admin_add_item");
                 inventory.setItem(slot, addItem);
             }
         }
     }
 
     private void drawControls() {
-        ItemStack prevPage = ItemUtil.createItem(Material.ARROW, "§e이전 페이지");
+        ItemStack prevPage = createGuiItem("items.previous_page");
         for (int slot : PREVIOUS_PAGE_SLOTS) {
             inventory.setItem(slot, prevPage);
         }
-        ItemStack nextPage = ItemUtil.createItem(Material.ARROW, "§e다음 페이지");
+        ItemStack nextPage = createGuiItem("items.next_page");
         for (int slot : NEXT_PAGE_SLOTS) {
             inventory.setItem(slot, nextPage);
         }
@@ -133,12 +140,16 @@ public class CodexAdminGUI extends Gui {
         for (int i = 0; i < CATEGORY_SLOTS.length; i++) {
             if (i < categories.length) {
                 CodexCategory category = categories[i];
-                ItemStack categoryItem = ItemUtil.createItem(category.getIcon(), "§b" + category.getDisplayName());
+                // 카테고리 이름은 번역하지 않고 Enum의 displayName 사용
+                String path = (currentFilter == category) ? "items.category_button_selected" : "items.category_button";
+                ItemStack categoryItem = createGuiItem(path, "%category_name%", category.getDisplayName());
+
                 ItemMeta meta = categoryItem.getItemMeta();
-                if (currentFilter == category) {
-                    meta.setDisplayName("§a§l[ " + category.getDisplayName() + " ]");
+                if (!guiConfig.contains(path + ".material")) {
+                    categoryItem.setType(category.getIcon());
                 }
-                categoryItem.setItemMeta(meta);
+                if (meta != null) categoryItem.setItemMeta(meta);
+
                 for (int slot : CATEGORY_SLOTS[i]) {
                     inventory.setItem(slot, categoryItem);
                 }
@@ -153,7 +164,7 @@ public class CodexAdminGUI extends Gui {
 
         // GUI 상단 클릭 (도감 GUI)
         if (clickedInventory.getHolder() == this) {
-            event.setCancelled(true);
+            event.setCancelled(true); // 상단 클릭 시 기본 동작 방지
             int slot = event.getRawSlot();
 
             if (isSlotInArray(slot, PREVIOUS_PAGE_SLOTS)) {
@@ -208,53 +219,64 @@ public class CodexAdminGUI extends Gui {
     private void handleItemRegistration(ItemStack itemToRegister) {
         String itemId = ItemUtil.getItemId(itemToRegister);
         if (itemId == null) {
-            player.sendMessage("§c[JCodex] 이 아이템의 ID를 자동으로 감지할 수 없습니다.");
+            player.sendMessage(getMessage("admin_register_id_detect_fail"));
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
             return;
         }
 
         CodexCategory categoryToRegister = (currentFilter != null) ? currentFilter : CodexCategory.MISC;
-        String displayName = itemToRegister.hasItemMeta() && itemToRegister.getItemMeta().hasDisplayName()
+        String originalDisplayName = itemToRegister.hasItemMeta() && itemToRegister.getItemMeta().hasDisplayName()
                 ? itemToRegister.getItemMeta().getDisplayName()
                 : itemToRegister.getType().name();
 
-        CodexItem newItem = new CodexItem(itemId, displayName, categoryToRegister,
-                new RewardSpec(null, 0, new HashMap<>(), null));
+        CodexItem newItem = new CodexItem(itemId, originalDisplayName, categoryToRegister,
+                new RewardSpec(null, 0, new HashMap<>(), null)); // 보상 리스트 초기화
 
         codexRepository.saveOrUpdateItem(newItem).thenRun(() -> {
-            player.sendMessage("§a아이템 '§f" + displayName + "§a' (§7" + itemId + "§a)이(가) "
-                    + "§e" + categoryToRegister.getDisplayName() + "§a 카테고리에 신규 등록되었습니다.");
+            // 메시지에는 번역된 이름 사용
+            String itemKey = ItemUtil.getItemKey(itemToRegister);
+            String translatedName = Lang.translate(player, itemKey);
+            String finalItemName = (translatedName != null) ? translatedName : originalDisplayName;
+
+            player.sendMessage(getMessage("admin_register_success",
+                    "%item_name%", finalItemName,
+                    "%item_id%", itemId,
+                    "%category_name%", categoryToRegister.getDisplayName()));
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.2f);
             plugin.getSyncService().publishItemUpdate(newItem);
-            plugin.getServer().getScheduler().runTask(plugin, this::refresh); // 등록 후 GUI 새로고침
+            plugin.getServer().getScheduler().runTask(plugin, this::refresh);
         }).exceptionally(ex -> {
-            player.sendMessage("§c아이템 등록 중 오류가 발생했습니다: " + ex.getMessage());
+            player.sendMessage(getMessage("admin_register_error", "%error%", ex.getMessage()));
             return null;
         });
     }
 
     private void handleItemDeletion(CodexItem itemToDelete) {
         player.closeInventory();
-        player.sendMessage("§c정말로 '§f" + itemToDelete.getDisplayName() + "§c' 아이템을 도감에서 삭제하시겠습니까?");
-        player.sendMessage("§7(삭제하려면 채팅으로 '삭제'라고 입력하세요)");
+
+        // 삭제 확인 메시지에 번역된 이름 사용
+        ItemStack tempItem = ItemUtil.createItemFromCodexItem(itemToDelete);
+        String itemKey = ItemUtil.getItemKey(tempItem);
+        String translatedName = Lang.translate(player, itemKey);
+        String finalItemName = (translatedName != null) ? translatedName : itemToDelete.getDisplayName();
+
+        player.sendMessage(getMessage("admin_delete_confirm", "%item_name%", finalItemName));
+        player.sendMessage(getMessage("admin_delete_prompt"));
 
         plugin.getGuiManager().promptChatInput(player, confirmation -> {
             if (confirmation.equalsIgnoreCase("삭제")) {
                 codexRepository.deleteItem(itemToDelete.getItemId()).thenRun(() -> {
-                    player.sendMessage("§a아이템이 성공적으로 삭제되었습니다.");
+                    player.sendMessage(getMessage("admin_delete_success"));
                     plugin.getSyncService().publishItemDelete(itemToDelete.getItemId());
-                    // 수정: 삭제 성공 후 GUI를 새로고침하고 다시 엽니다.
                     plugin.getServer().getScheduler().runTask(plugin, () -> {
-                        loadDataAndDraw(); // 데이터 새로고침
-                        plugin.getGuiManager().openGui(this); // GUI 다시 열기
+                        loadDataAndDraw();
+                        plugin.getGuiManager().openGui(this);
                     });
                 });
             } else {
-                player.sendMessage("§e삭제가 취소되었습니다.");
-                // 수정: 삭제 취소 시에도 GUI를 다시 엽니다.
+                player.sendMessage(getMessage("admin_delete_cancelled"));
                 plugin.getServer().getScheduler().runTask(plugin, () -> plugin.getGuiManager().openGui(this));
             }
-            // 수정: 콜백 외부의 GUI 열기 코드는 제거합니다.
         });
     }
 

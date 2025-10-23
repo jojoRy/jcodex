@@ -9,11 +9,13 @@ import kr.jjory.jcodex.model.RewardSpec;
 import kr.jjory.jcodex.repository.CodexRepository;
 import kr.jjory.jcodex.repository.PlayerProgressRepository;
 import kr.jjory.jcodex.service.ProgressService;
-import kr.jjory.jcodex.util.ItemUtil;
+import kr.jjory.jcodex.util.ItemUtil; // ItemUtil은 아이템 생성 외 로직에 필요
+import kr.jjory.jcodex.util.Lang;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -31,7 +33,7 @@ public class CodexMainGUI extends Gui {
     private final PlayerProgressRepository playerProgressRepository;
     private final ProgressService progressService;
 
-    // 기획서에 명시된 슬롯 레이아웃
+    // 기획서 슬롯 레이아웃
     private static final int[] ITEM_SLOTS = {
             0, 1, 2, 3, 4, 5,
             9, 10, 11, 12, 13, 14,
@@ -56,7 +58,8 @@ public class CodexMainGUI extends Gui {
     private CodexCategory currentFilter = CodexCategory.FARMER;
 
     public CodexMainGUI(Player player, JCodexPlugin plugin) {
-        super(player, 54, "§8📘 도감 시스템");
+        // 수정: Gui 생성자 변경에 따라 guiConfig 전달
+        super(player, 54, "main", plugin.getConfigManager().getGuiConfig());
         this.plugin = plugin;
         this.codexRepository = new CodexRepository(plugin);
         this.playerProgressRepository = new PlayerProgressRepository(plugin);
@@ -90,7 +93,7 @@ public class CodexMainGUI extends Gui {
     }
 
     private void drawBackground() {
-        ItemStack background = ItemUtil.createItem(Material.GRAY_STAINED_GLASS_PANE, " ");
+        ItemStack background = createGuiItem("items.background");
         for (int i = 0; i < inventory.getSize(); i++) {
             inventory.setItem(i, background);
         }
@@ -108,29 +111,39 @@ public class CodexMainGUI extends Gui {
 
                 ItemStack displayItem = ItemUtil.createItemFromCodexItem(codexItem);
                 ItemMeta meta = displayItem.getItemMeta();
-                List<String> lore = new ArrayList<>();
+                String basePath = isRegistered ? "items.codex_item_registered" : "items.codex_item_unregistered";
 
-                if (isRegistered) {
-                    meta.setDisplayName("§a✅ " + codexItem.getDisplayName());
-                    lore.add("§a이미 등록된 아이템입니다.");
-                } else {
-                    meta.setDisplayName("§c❓ " + codexItem.getDisplayName());
-                    lore.add("§c미등록 아이템입니다.");
-                    lore.add("§7클릭하여 인벤토리의 아이템을 등록하세요.");
-                }
+                String itemKey = ItemUtil.getItemKey(displayItem);
+                String translatedName = Lang.translate(player, itemKey);
+                String finalItemName = (translatedName != null) ? translatedName : codexItem.getDisplayName();
 
-                lore.add(" ");
-                lore.add("§6[해금 보상]");
+                String name = guiConfig.getString(basePath + ".name", "%item_name%")
+                        .replace("%item_name%", finalItemName);
+                List<String> lore = new ArrayList<>(guiConfig.getStringList(basePath + ".lore"));
+
                 RewardSpec reward = codexItem.getReward();
-                if(reward.getMoney() > 0) lore.add("§7- 돈: §f" + reward.getMoney());
+                if(reward.getMoney() > 0) lore.add(colorize("&7- 돈: &f" + formatNumber("money", reward.getMoney())));
 
                 MainConfig mainConfig = plugin.getConfigManager().getMainConfig();
                 reward.getStats().forEach((statKey, value) -> {
                     MainConfig.StatDefinition def = mainConfig.getStatDefinition(statKey);
-                    lore.add("§7- 스탯: §f" + def.getDisplay() + " + " + value);
+                    lore.add(colorize("&7- 스탯: &f" + def.getDisplay() + " + " + value));
                 });
 
-                meta.setLore(lore);
+                if (reward.getRewardItems() != null && !reward.getRewardItems().isEmpty()) {
+                    ItemStack firstRewardItem = reward.getRewardItems().get(0);
+                    String rewardItemKey = ItemUtil.getItemKey(firstRewardItem);
+                    String translatedRewardName = Lang.translate(player, rewardItemKey);
+                    String finalRewardName = (translatedRewardName != null) ? translatedRewardName : firstRewardItem.getType().name().toLowerCase();
+                    String itemRewardLine = "&7- 아이템: &f" + finalRewardName;
+                    if (reward.getRewardItems().size() > 1) {
+                        itemRewardLine += " 외 " + (reward.getRewardItems().size() - 1) + "개";
+                    }
+                    lore.add(colorize(itemRewardLine));
+                }
+
+                meta.setDisplayName(colorize(name));
+                meta.setLore(lore.stream().map(this::colorize).collect(Collectors.toList()));
                 displayItem.setItemMeta(meta);
                 inventory.setItem(slot, displayItem);
 
@@ -141,11 +154,11 @@ public class CodexMainGUI extends Gui {
     }
 
     private void drawControls() {
-        ItemStack prevPage = ItemUtil.createItem(Material.ARROW, "§e이전 페이지");
+        ItemStack prevPage = createGuiItem("items.previous_page");
         for (int slot : PREVIOUS_PAGE_SLOTS) {
             inventory.setItem(slot, prevPage);
         }
-        ItemStack nextPage = ItemUtil.createItem(Material.ARROW, "§e다음 페이지");
+        ItemStack nextPage = createGuiItem("items.next_page");
         for (int slot : NEXT_PAGE_SLOTS) {
             inventory.setItem(slot, nextPage);
         }
@@ -154,15 +167,16 @@ public class CodexMainGUI extends Gui {
         for (int i = 0; i < CATEGORY_SLOTS.length; i++) {
             if (i < categories.length) {
                 CodexCategory category = categories[i];
-                ItemStack categoryItem = ItemUtil.createItem(category.getIcon(), "§b" + category.getDisplayName());
+                String path = (currentFilter == category) ? "items.category_button_selected" : "items.category_button";
+                ItemStack categoryItem = createGuiItem(path, "%category_name%", category.getDisplayName());
+
                 ItemMeta meta = categoryItem.getItemMeta();
-                List<String> lore = new ArrayList<>();
-                lore.add("§7클릭하여 §a" + category.getDisplayName() + "§7 카테고리만 봅니다.");
-                if (currentFilter == category) {
-                    meta.setDisplayName("§a§l[ " + category.getDisplayName() + " ]");
+                // gui.yml에서 material을 지정하지 않았으므로, Enum에서 아이콘 가져오기
+                if (!guiConfig.contains(path + ".material")) {
+                    categoryItem.setType(category.getIcon());
                 }
-                meta.setLore(lore);
-                categoryItem.setItemMeta(meta);
+                if (meta != null) categoryItem.setItemMeta(meta);
+
                 for (int slot : CATEGORY_SLOTS[i]) {
                     inventory.setItem(slot, categoryItem);
                 }
@@ -170,65 +184,77 @@ public class CodexMainGUI extends Gui {
         }
 
         progressService.calculateProgress(player.getUniqueId(), currentFilter).thenAccept(progressMap -> {
-            ItemStack categoryProgressItem = ItemUtil.createItem(Material.EXPERIENCE_BOTTLE,
-                    "§a카테고리 달성도",
-                    List.of("§7" + (currentFilter != null ? currentFilter.getDisplayName() : "전체") + ": " + String.format("%.1f%%", progressMap.getOrDefault("categoryProgress", 0.0)))
-            );
+            double catProgress = progressMap.getOrDefault("categoryProgress", 0.0);
+            double globalProgress = progressMap.getOrDefault("globalProgress", 0.0);
+            String catName = (currentFilter != null ? currentFilter.getDisplayName() : "전체");
+
+            // 수정: formatNumber 결과 뒤에 '%' 추가
+            String formattedCatProgress = formatNumber("percentage", catProgress) + "%";
+            ItemStack categoryProgressItem = createGuiItem("items.category_progress",
+                    "%category_name%", catName,
+                    "%progress%", formattedCatProgress); // %progress% 자리에 "숫자%" 문자열 전달
             inventory.setItem(CATEGORY_PROGRESS_SLOT, categoryProgressItem);
 
-            ItemStack globalProgressItem = ItemUtil.createItem(Material.NETHER_STAR,
-                    "§b전체 달성도",
-                    List.of("§7진행도: " + String.format("%.1f%%", progressMap.getOrDefault("globalProgress", 0.0)))
-            );
+            // 수정: formatNumber 결과 뒤에 '%' 추가
+            String formattedGlobalProgress = formatNumber("percentage", globalProgress) + "%";
+            ItemStack globalProgressItem = createGuiItem("items.global_progress",
+                    "%progress%", formattedGlobalProgress); // %progress% 자리에 "숫자%" 문자열 전달
             inventory.setItem(GLOBAL_PROGRESS_SLOT, globalProgressItem);
         });
     }
 
     @Override
     public void handleClick(InventoryClickEvent event) {
-        event.setCancelled(true);
-        int slot = event.getRawSlot();
+        // 수정: 리스너에서 이미 취소했으므로 여기서는 취소 X
+        Inventory clickedInventory = event.getClickedInventory();
+        if (clickedInventory == null) return;
 
-        if (isSlotInArray(slot, PREVIOUS_PAGE_SLOTS)) {
-            if (currentPage > 0) {
-                currentPage--;
-                draw();
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            }
-        } else if (isSlotInArray(slot, NEXT_PAGE_SLOTS)) {
-            if (currentPage < totalPages - 1) {
-                currentPage++;
-                draw();
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            }
-        }
+        // GUI 상단 클릭
+        if (clickedInventory.getHolder() == this) {
+            int slot = event.getRawSlot();
 
-        for (int i = 0; i < CATEGORY_SLOTS.length; i++) {
-            if (isSlotInArray(slot, CATEGORY_SLOTS[i]) && i < CodexCategory.values().length) {
-                currentFilter = CodexCategory.values()[i];
-                currentPage = 0;
-                loadDataAndDraw();
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
-                return;
-            }
-        }
-
-        for (int i = 0; i < ITEM_SLOTS.length; i++) {
-            if (slot == ITEM_SLOTS[i]) {
-                int itemIndex = (currentPage * itemsPerPage) + i;
-                if (itemIndex < itemsToShow.size()) {
-                    CodexItem clickedCodexItem = itemsToShow.get(itemIndex);
-                    boolean isRegistered = playerProgress != null && playerProgress.getRegisteredItemIds().contains(clickedCodexItem.getItemId());
-                    if (!isRegistered) {
-                        plugin.getCodexService().registerItem(player, clickedCodexItem);
-                    } else {
-                        player.sendMessage("§e[JCodex] 이미 등록한 아이템입니다.");
-                        player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
-                    }
+            if (isSlotInArray(slot, PREVIOUS_PAGE_SLOTS)) {
+                if (currentPage > 0) {
+                    currentPage--;
+                    draw();
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
                 }
-                return;
+            } else if (isSlotInArray(slot, NEXT_PAGE_SLOTS)) {
+                if (currentPage < totalPages - 1) {
+                    currentPage++;
+                    draw();
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+                }
+            }
+
+            for (int i = 0; i < CATEGORY_SLOTS.length; i++) {
+                if (isSlotInArray(slot, CATEGORY_SLOTS[i]) && i < CodexCategory.values().length) {
+                    currentFilter = CodexCategory.values()[i];
+                    currentPage = 0;
+                    loadDataAndDraw();
+                    player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
+                    return;
+                }
+            }
+
+            for (int i = 0; i < ITEM_SLOTS.length; i++) {
+                if (slot == ITEM_SLOTS[i]) {
+                    int itemIndex = (currentPage * itemsPerPage) + i;
+                    if (itemIndex < itemsToShow.size()) {
+                        CodexItem clickedCodexItem = itemsToShow.get(itemIndex);
+                        boolean isRegistered = playerProgress != null && playerProgress.getRegisteredItemIds().contains(clickedCodexItem.getItemId());
+                        if (!isRegistered) {
+                            plugin.getCodexService().registerItem(player, clickedCodexItem);
+                        } else {
+                            player.sendMessage(getMessage("register_already"));
+                            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 1.0f);
+                        }
+                    }
+                    return;
+                }
             }
         }
+        // 하단 인벤토리 클릭은 무시
     }
 
     private boolean isSlotInArray(int slot, int[] array) {

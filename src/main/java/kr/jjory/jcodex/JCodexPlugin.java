@@ -8,6 +8,7 @@ import kr.jjory.jcodex.loader.CodexDataLoader;
 import kr.jjory.jcodex.service.*;
 import kr.jjory.jcodex.storage.DatabaseManager;
 import kr.jjory.jcodex.storage.RedisClient;
+import kr.jjory.jcodex.util.Lang; // Lang 클래스 임포트
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -36,6 +37,9 @@ public final class JCodexPlugin extends JavaPlugin {
     public void onEnable() {
         // 설정 로드
         configManager = new ConfigManager(this);
+
+        // 언어 파일 초기화 (추가)
+        Lang.init(this);
 
         // 의존성 체크
         if (!setupEconomy()) {
@@ -118,3 +122,4 @@ public final class JCodexPlugin extends JavaPlugin {
     public MilestoneService getMilestoneService() { return milestoneService; }
     public SyncService getSyncService() { return syncService; }
 }
+

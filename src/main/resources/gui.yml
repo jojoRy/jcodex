@@ -1,0 +1,207 @@
+# JCodex 플러그인 GUI 관련 텍스트 및 아이템 설정 파일
+
+# --- GUI 창 제목 설정 ---
+titles:
+  main: "§8📘 도감 시스템"                # 유저용 메인 도감 GUI 제목 (/도감)
+  admin: "§e도감 설정"                   # 관리자용 도감 설정 GUI 제목 (/도감설정)
+  reward_setting: "§6해금 보상 설정"       # 개별 아이템 보상 설정 GUI 제목
+  item_reward_setting: "아이템 보상 등록 (최대 9개)" # 아이템 보상 전용 GUI 제목
+
+# --- GUI 내부 아이템 설정 ---
+# 각 아이템별로 material(아이템 종류)과 custom_model_data(커스텀 모델 데이터) 설정 가능
+items:
+  background:
+    material: GRAY_STAINED_GLASS_PANE # 배경을 채울 아이템 종류
+    custom_model_data: 0             # 배경 아이템의 커스텀 모델 데이터
+    name: " "                        # 이름 (보통 공백)
+    lore: []                         # 설명 (보통 없음)
+  previous_page:
+    material: ARROW
+    custom_model_data: 0
+    name: "§e이전 페이지"
+    lore: []
+  next_page:
+    material: ARROW
+    custom_model_data: 0
+    name: "§e다음 페이지"
+    lore: []
+  # 카테고리 버튼 (선택되지 않았을 때)
+  category_button:
+    # material은 CodexCategory Enum에서 자동으로 가져옵니다.
+    custom_model_data: 0
+    name: "§b%category_name%"
+    lore:
+      - "§7클릭하여 §a%category_name%§7 카테고리만 봅니다."
+  # 카테고리 버튼 (선택되었을 때)
+  category_button_selected:
+    # material은 CodexCategory Enum에서 자동으로 가져옵니다.
+    custom_model_data: 0
+    name: "§a§l[ %category_name% ]"
+    lore:
+      - "§7현재 선택된 카테고리입니다."
+  # 카테고리 진행도 표시 아이템 (메인/관리자 GUI 슬롯 47)
+  category_progress:
+    material: EXPERIENCE_BOTTLE
+    custom_model_data: 0
+    name: "§a카테고리 달성도"
+    lore:
+      - "§7%category_name%: %progress%"
+  # 전체 진행도 표시 아이템 (메인/관리자 GUI 슬롯 48)
+  global_progress:
+    material: NETHER_STAR
+    custom_model_data: 0
+    name: "§b전체 달성도"
+    lore:
+      - "§7진행도: %progress%"
+  # 유저 GUI: 등록된 도감 아이템 표시 형식
+  codex_item_registered:
+    # material은 실제 아이템 종류를 따라갑니다.
+    # custom_model_data도 실제 아이템을 따라갑니다.
+    name: "§a✅ %item_name%"
+    lore:
+      - "§a이미 등록된 아이템입니다."
+      - " "
+      - "§6[해금 보상]"
+      # 보상 내용은 RewardSpec과 함께 동적으로 추가됩니다.
+  # 유저 GUI: 미등록 도감 아이템 표시 형식
+  codex_item_unregistered:
+    # material은 실제 아이템 종류를 따라갑니다.
+    # custom_model_data도 실제 아이템을 따라갑니다.
+    name: "§c❓ %item_name%"
+    lore:
+      - "§c미등록 아이템입니다."
+      - "§7클릭하여 인벤토리의 아이템을 등록하세요."
+      - " "
+      - "§6[해금 보상]"
+      # 보상 내용은 RewardSpec과 함께 동적으로 추가됩니다.
+  # 관리자 GUI: 등록된 도감 아이템 표시 형식
+  admin_codex_item:
+    # material은 실제 아이템 종류를 따라갑니다.
+    # custom_model_data도 실제 아이템을 따라갑니다.
+    name: "§e%item_name%"
+    lore:
+      - "§7아이템 ID: %item_id%"
+      - "§7카테고리: %category_name%"
+      - " "
+      - "§a좌클릭: §f보상 설정"
+      - "§cShift + 우클릭: §f아이템 삭제"
+  # 관리자 GUI: 빈 슬롯 (아이템 추가 안내)
+  admin_add_item:
+    material: LIME_STAINED_GLASS_PANE
+    custom_model_data: 0
+    name: "§a아이템 신규 등록"
+    lore:
+      - "§7아래 인벤토리에서 아이템을 클릭하여"
+      - "§7이 카테고리에 신규 등록하세요."
+  # 보상 설정 GUI: 아이템 보상 슬롯 (보상 없을 때)
+  reward_item_placeholder:
+    material: CHEST
+    custom_model_data: 0
+    name: "§c아이템 보상 없음"
+    lore:
+      - "§a클릭하여 보상 아이템 설정"
+  # 보상 설정 GUI: 아이템 보상 슬롯 (보상 있을 때) - 아이템 자체 정보 사용 + 아래 설명 추가
+  reward_item_set:
+    lore_suffix: # 아이템 기존 lore 뒤에 추가될 내용
+      - " "
+      - "§7(총 %count%개의 아이템 보상)" # 아이템이 여러 개일 때만 추가
+      - "§a클릭하여 보상 아이템 변경"
+  # 보상 설정 GUI: 돈 보상 버튼
+  reward_money:
+    material: GOLD_NUGGET
+    custom_model_data: 0
+    name: "§6돈 보상 설정"
+    lore:
+      - "§7현재 값: §e%value%"
+      - "§a좌클릭: §f금액 설정" # 수정: 좌클릭으로 변경
+      - "§cShift+우클릭: §f초기화"
+  # 보상 설정 GUI: 스탯 보상 버튼
+  reward_stat:
+    # material은 활성화(LIME_DYE)/비활성화(RED_DYE) 상태 따라 자동 변경됨
+    custom_model_data: 0
+    name: "§b%stat_name% 보상"
+    lore:
+      - "%status_display%"
+      - "§7현재 값: §a%value%"
+      - " "
+      - "§e좌클릭: §f활성/비활성 전환"
+      - "§e우클릭: §f값 설정 (소수점 가능)"
+      - "§eShift+우클릭: §f초기화"
+  reward_stat_status_enabled: "§a상태: 활성화됨" # 스탯 활성화 시 표시 텍스트
+  reward_stat_status_disabled: "§c상태: 비활성화됨" # 스탯 비활성화 시 표시 텍스트
+  # 보상 설정 GUI: 뒤로가기 버튼
+  back_button:
+    material: BARRIER
+    custom_model_data: 0
+    name: "§c뒤로 가기 (저장 안 함)"
+    lore: []
+  # 보상 설정 GUI: 저장하기 버튼
+  save_button:
+    material: ANVIL
+    custom_model_data: 0
+    name: "§a변경사항 저장하기"
+    lore: []
+  # 아이템 보상 전용 GUI: 중앙 슬롯 (비어있을 때)
+  item_reward_slot_placeholder:
+    material: CHEST
+    custom_model_data: 0
+    name: "§a보상 아이템 등록 슬롯"
+    lore:
+      - "§7이곳에 보상으로 지급할"
+      - "§7아이템을 올려주세요."
+  # 아이템 보상 전용 GUI: 뒤로가기 버튼
+  item_reward_back_button:
+    material: BARRIER
+    custom_model_data: 0
+    name: "§c뒤로 가기"
+    lore: []
+  # 아이템 보상 전용 GUI: 저장하기 버튼
+  item_reward_save_button:
+    material: ANVIL
+    custom_model_data: 0
+    name: "§a저장하기"
+    lore: []
+
+# --- 플레이어에게 보여지는 메시지 설정 ---
+messages:
+  register_no_item: "§c[JCodex] 도감에 등록할 아이템을 가지고 있지 않습니다."
+  register_success: "§a[JCodex] '§f%item_name%§a' 아이템을 도감에 등록했습니다!"
+  register_already: "§e[JCodex] 이미 등록한 아이템입니다."
+  reward_money_received: "§a[JCodex] 보상으로 §e%amount%§a원을 받았습니다."
+  reward_stat_received: "§a[JCodex] 보상으로 스탯 §b%stat_name% + %value%§a를 받았습니다."
+  reward_items_received: "§a[JCodex] 보상으로 아이템 %count%개를 받았습니다."
+  milestone_reward_received: "§a[JCodex] 달성도 보상을 획득했습니다! (%type% %percent%%)"
+  admin_register_prompt_id: "§a[JCodex] 채팅으로 등록할 아이템의 고유 ID를 입력해주세요. (예: minecraft:diamond 또는 itemsadder:ruby_sword)" # 이제 사용 안 함
+  admin_register_prompt_cancel: "§7(취소하려면 '취소'라고 입력하세요)" # 이제 사용 안 함
+  admin_register_cancelled: "§e등록이 취소되었습니다." # 이제 사용 안 함
+  admin_register_success: "§a아이템 '§f%item_name%§a' (§7%item_id%§a)이(가) §e%category_name%§a 카테고리에 신규 등록되었습니다."
+  admin_register_error: "§c아이템 등록 중 오류가 발생했습니다: %error%"
+  admin_register_no_item_in_hand: "§c[JCodex] 등록할 아이템을 손에 들어주세요." # 이제 사용 안 함
+  admin_register_id_detect_fail: "§c[JCodex] 이 아이템의 ID를 자동으로 감지할 수 없습니다."
+  admin_delete_confirm: "§c정말로 '§f%item_name%§c' 아이템을 도감에서 삭제하시겠습니까?"
+  admin_delete_prompt: "§7(삭제하려면 채팅으로 '삭제'라고 입력하세요)"
+  admin_delete_success: "§a아이템이 성공적으로 삭제되었습니다."
+  admin_delete_cancelled: "§e삭제가 취소되었습니다."
+  admin_reward_prompt_money: "§a[JCodex] 채팅으로 설정할 돈 보상 금액을 입력해주세요. (숫자만)"
+  admin_reward_prompt_stat: "§a[JCodex] 채팅으로 '%stat_name%' 스탯 보상 값을 입력해주세요. (소수점 가능)"
+  admin_reward_set_money: "§a돈 보상이 §e%amount%§a(으)로 설정되었습니다."
+  admin_reward_set_stat: "§a%stat_name% 스탯 보상이 §e%value%§a(으)로 설정되었습니다."
+  admin_reward_invalid_number: "§c잘못된 숫자 형식입니다."
+  admin_reward_saved: "§a보상 설정이 성공적으로 저장되었습니다."
+  admin_item_reward_set: "§a아이템 보상이 설정되었습니다."
+  reload_start: "§aJCodex 플러그인 설정을 리로드합니다..."
+  reload_sync: "§aYAML 파일을 데이터베이스와 동기화합니다..."
+  reload_complete: "§a리로드 및 동기화가 완료되었습니다."
+  export_start: "§a데이터베이스의 도감 데이터를 YAML 파일로 내보내기를 시작합니다..."
+  export_complete: "§a내보내기가 완료되었습니다. codex_items_export.yml, milestones_export.yml 파일을 확인하세요."
+  export_error: "§c내보내기 중 오류가 발생했습니다: %error%"
+  no_permission: "§c권한이 없습니다."
+  main_server_only: "§c이 명령어는 MAIN 서버에서만 사용할 수 있습니다."
+  player_only: "이 명령어는 플레이어만 사용할 수 있습니다."
+
+# --- 숫자 포맷 설정 ---
+# gui.yml 파일 내에서 %변수% 형태로 숫자를 표시할 때 사용할 포맷 지정
+formats:
+  money: "#,##0"       # 돈 표시 형식 (예: 1000 -> 1,000)
+  percentage: "###.##"   # 퍼센트 표시 형식 (소수점 둘째 자리까지, 예: 24.565 -> 24.57)
+

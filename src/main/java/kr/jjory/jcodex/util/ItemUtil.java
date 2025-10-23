@@ -101,5 +101,17 @@ public class ItemUtil {
         // 3. 바닐라 아이템
         return "minecraft:" + item.getType().getKey().getKey();
     }
+
+    /**
+     * ItemStack에서 번역 키로 사용할 기본 키 (Material 이름)를 추출합니다.
+     * 커스텀 아이템은 아직 지원하지 않습니다.
+     */
+    public static String getItemKey(ItemStack item) {
+        if (item == null || item.getType().isAir()) return null;
+
+        // TODO: ItemsAdder, MMOItems 등의 커스텀 아이템 키 추출 로직 추가 필요
+        // 현재는 바닐라 아이템의 Material 이름만 반환
+        return item.getType().name();
+    }
 }
 
