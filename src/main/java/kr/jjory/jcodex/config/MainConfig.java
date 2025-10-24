@@ -22,6 +22,7 @@ public class MainConfig {
     private final boolean redisEnabled;
     private final String redisHost;
     private final int redisPort;
+    private String redisPassword; // ✅ 추가
     private final String redisChannel;
 
     private final String serverMode;
@@ -41,6 +42,7 @@ public class MainConfig {
         this.redisEnabled = config.getBoolean("redis.enabled", true);
         this.redisHost = config.getString("redis.host", "localhost");
         this.redisPort = config.getInt("redis.port", 6379);
+        this.redisPassword = config.getString("redis.password", ""); // ✅ 추가
         this.redisChannel = config.getString("redis.channel", "jcodex_sync");
 
         this.serverMode = config.getString("multi-server.mode", "MAIN");
@@ -68,6 +70,7 @@ public class MainConfig {
     public boolean isRedisEnabled() { return redisEnabled; }
     public String getRedisHost() { return redisHost; }
     public int getRedisPort() { return redisPort; }
+    public String getRedisPassword() { return redisPassword; }
     public String getRedisChannel() { return redisChannel; }
     public String getServerMode() { return serverMode; }
     public boolean isConsumeItem() { return consumeItem; }

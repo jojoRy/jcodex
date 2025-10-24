@@ -25,7 +25,7 @@ public class RedisClient {
         if (config.isRedisEnabled()) {
             this.channel = config.getRedisChannel();
             try {
-                String redisUri = "redis://" + config.getRedisHost() + ":" + config.getRedisPort();
+                String redisUri = "redis://:" + config.getRedisPassword() + "@" + config.getRedisHost() + ":" + config.getRedisPort();
                 this.lettuceClient = io.lettuce.core.RedisClient.create(redisUri); // FQN 사용
                 this.pubSubConnection = lettuceClient.connectPubSub();
                 this.publishConnection = lettuceClient.connect();
