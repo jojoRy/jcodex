@@ -56,4 +56,27 @@ public class PlayerStatRepository {
             }
         });
     }
+
+    public CompletableFuture<Void> decrementStat(UUID uuid, String stat, double value) {
+        return CompletableFuture.runAsync(() -> {
+            String upsertSql = "INSERT INTO player_stats (uuid, stat, value) VALUES (?, ?, 0) " +
+                    "ON DUPLICATE KEY UPDATE value = GREATEST(value - VALUES(value), 0)";
+            String cleanupSql = "DELETE FROM player_stats WHERE uuid = ? AND stat = ? AND value <= 0";
+            try (Connection conn = plugin.getDatabaseManager().getConnection();
+                 PreparedStatement upsertStmt = conn.prepareStatement(upsertSql);
+                 PreparedStatement cleanupStmt = conn.prepareStatement(cleanupSql)) {
+                upsertStmt.setString(1, uuid.toString());
+                upsertStmt.setString(2, stat);
+                upsertStmt.setDouble(3, value);
+                upsertStmt.executeUpdate();
+
+                cleanupStmt.setString(1, uuid.toString());
+                cleanupStmt.setString(2, stat);
+                cleanupStmt.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().severe("플레이어 스탯 차감 중 오류: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+    }
 }

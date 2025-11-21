@@ -5,6 +5,8 @@ import kr.jjory.jcodex.model.CodexCategory;
 import kr.jjory.jcodex.model.CodexItem;
 import kr.jjory.jcodex.model.RewardSpec;
 import kr.jjory.jcodex.repository.CodexRepository;
+import kr.jjory.jcodex.repository.PlayerProgressRepository;
+import kr.jjory.jcodex.service.PlayerStatService;
 import kr.jjory.jcodex.util.ItemUtil;
 import kr.jjory.jcodex.util.Lang; // Lang 클래스 임포트
 import org.bukkit.Material;
@@ -27,6 +29,8 @@ public class CodexAdminGUI extends Gui {
 
     private final JCodexPlugin plugin;
     private final CodexRepository codexRepository;
+    private final PlayerProgressRepository progressRepository;
+    private final PlayerStatService playerStatService;
     private final Gui parentGui;
 
     // 기획서 슬롯 레이아웃
@@ -54,6 +58,8 @@ public class CodexAdminGUI extends Gui {
         super(player, 54, "admin", plugin.getConfigManager().getGuiConfig());
         this.plugin = plugin;
         this.codexRepository = new CodexRepository(plugin);
+        this.progressRepository = new PlayerProgressRepository(plugin);
+        this.playerStatService = plugin.getPlayerStatService();
         this.parentGui = parentGui;
         loadDataAndDraw();
     }
@@ -259,10 +265,19 @@ public class CodexAdminGUI extends Gui {
 
         plugin.getGuiManager().promptChatInput(player, confirmation -> {
             if (confirmation.equalsIgnoreCase("삭제")) {
-                codexRepository.deleteItem(itemToDelete.getItemId()).thenRun(() -> {
-                    player.sendMessage(getMessage("admin_delete_success"));
-                    plugin.getSyncService().publishItemDelete(itemToDelete.getItemId());
+                String itemId = itemToDelete.getItemId();
+                progressRepository.findPlayersByItemId(itemId).thenCompose(affectedPlayers ->
+                        codexRepository.deleteItem(itemId)
+                                .thenCompose(v -> progressRepository.deleteRegistrationsByItem(itemId))
+                                .thenCompose(v -> playerStatService.removeStatsForDeletedItem(itemToDelete.getReward().getStats(), affectedPlayers))
+                                .thenApply(v -> affectedPlayers)
+                ).thenAccept(affectedPlayers -> {
                     plugin.getServer().getScheduler().runTask(plugin, () -> {
+                        player.sendMessage(getMessage("admin_delete_success"));
+                        if (!affectedPlayers.isEmpty()) {
+                            player.sendMessage("§e[JCodex] " + affectedPlayers.size() + "명의 플레이어에게 적용된 스탯을 회수했습니다.");
+                        }
+                        plugin.getSyncService().publishItemDelete(itemId);
                         loadDataAndDraw();
                         plugin.getGuiManager().openGui(this);
                     });
