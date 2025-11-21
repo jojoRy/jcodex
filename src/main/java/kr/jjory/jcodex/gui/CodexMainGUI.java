@@ -168,14 +168,7 @@ public class CodexMainGUI extends Gui {
             if (i < categories.length) {
                 CodexCategory category = categories[i];
                 String path = (currentFilter == category) ? "items.category_button_selected" : "items.category_button";
-                ItemStack categoryItem = createGuiItem(path, "%category_name%", category.getDisplayName());
-
-                ItemMeta meta = categoryItem.getItemMeta();
-                // gui.yml에서 material을 지정하지 않았으므로, Enum에서 아이콘 가져오기
-                if (!guiConfig.contains(path + ".material")) {
-                    categoryItem.setType(category.getIcon());
-                }
-                if (meta != null) categoryItem.setItemMeta(meta);
+                ItemStack categoryItem = createCategoryItem(path, category);
 
                 for (int slot : CATEGORY_SLOTS[i]) {
                     inventory.setItem(slot, categoryItem);
@@ -188,17 +181,20 @@ public class CodexMainGUI extends Gui {
             double globalProgress = progressMap.getOrDefault("globalProgress", 0.0);
             String catName = (currentFilter != null ? currentFilter.getDisplayName() : "전체");
 
-            // 수정: formatNumber 결과 뒤에 '%' 추가
             String formattedCatProgress = formatNumber("percentage", catProgress) + "%";
+            String formattedGlobalProgress = formatNumber("percentage", globalProgress) + "%";
             ItemStack categoryProgressItem = createGuiItem("items.category_progress",
                     "%category_name%", catName,
-                    "%progress%", formattedCatProgress); // %progress% 자리에 "숫자%" 문자열 전달
+                    "%progress%", formattedCatProgress,
+                    "%category_progress%", formattedCatProgress,
+                    "%global_progress%", formattedGlobalProgress);
             inventory.setItem(CATEGORY_PROGRESS_SLOT, categoryProgressItem);
 
-            // 수정: formatNumber 결과 뒤에 '%' 추가
-            String formattedGlobalProgress = formatNumber("percentage", globalProgress) + "%";
             ItemStack globalProgressItem = createGuiItem("items.global_progress",
-                    "%progress%", formattedGlobalProgress); // %progress% 자리에 "숫자%" 문자열 전달
+                    "%progress%", formattedGlobalProgress,
+                    "%category_progress%", formattedCatProgress,
+                    "%global_progress%", formattedGlobalProgress,
+                    "%category_name%", catName);
             inventory.setItem(GLOBAL_PROGRESS_SLOT, globalProgressItem);
         });
     }
@@ -262,6 +258,40 @@ public class CodexMainGUI extends Gui {
             if (i == slot) return true;
         }
         return false;
+    }
+
+    private ItemStack createCategoryItem(String path, CodexCategory category) {
+        ItemStack categoryItem = createGuiItem(path, "%category_name%", category.getDisplayName());
+
+        Material configuredMaterial = resolveCategoryMaterial(path, category);
+        if (configuredMaterial != null) {
+            categoryItem.setType(configuredMaterial);
+        } else if (!guiConfig.contains(path + ".material")) {
+            categoryItem.setType(category.getIcon());
+        }
+
+        ItemMeta meta = categoryItem.getItemMeta();
+        if (meta != null) {
+            categoryItem.setItemMeta(meta);
+        }
+
+        return categoryItem;
+    }
+
+    private Material resolveCategoryMaterial(String path, CodexCategory category) {
+        Material direct = loadMaterialFromConfig(path + ".materials." + category.name());
+        if (direct != null) {
+            return direct;
+        }
+
+        if (!"items.category_button".equals(path)) {
+            Material fallback = loadMaterialFromConfig("items.category_button.materials." + category.name());
+            if (fallback != null) {
+                return fallback;
+            }
+        }
+
+        return null;
     }
 }
 

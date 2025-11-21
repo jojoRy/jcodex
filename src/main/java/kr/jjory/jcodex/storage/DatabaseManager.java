@@ -64,11 +64,19 @@ public class DatabaseManager {
                 "PRIMARY KEY (uuid, milestone_id)" +
                 ");";
 
+        String playerStatsTable = "CREATE TABLE IF NOT EXISTS player_stats (" +
+                "uuid CHAR(36) NOT NULL, " +
+                "stat VARCHAR(64) NOT NULL, " +
+                "value DOUBLE NOT NULL DEFAULT 0, " +
+                "PRIMARY KEY (uuid, stat)" +
+                ");";
+
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
             stmt.execute(codexItemsTable);
             stmt.execute(playerCodexTable);
             stmt.execute(milestonesTable);
             stmt.execute(playerMilestonesTable);
+            stmt.execute(playerStatsTable);
             plugin.getLogger().info("데이터베이스 테이블이 성공적으로 확인/생성되었습니다.");
         } catch (SQLException e) {
             plugin.getLogger().severe("데이터베이스 테이블 생성 중 심각한 오류가 발생했습니다: " + e.getMessage());

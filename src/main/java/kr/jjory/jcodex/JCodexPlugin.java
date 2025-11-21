@@ -4,6 +4,7 @@ import kr.jjory.jcodex.command.*;
 import kr.jjory.jcodex.config.ConfigManager;
 import kr.jjory.jcodex.gui.GuiManager;
 import kr.jjory.jcodex.listener.GUIInteractionListener;
+import kr.jjory.jcodex.listener.PlayerStatListener;
 import kr.jjory.jcodex.loader.CodexDataLoader;
 import kr.jjory.jcodex.service.*;
 import kr.jjory.jcodex.storage.DatabaseManager;
@@ -27,6 +28,7 @@ public final class JCodexPlugin extends JavaPlugin {
 
     private CodexService codexService;
     private RewardService rewardService;
+    private PlayerStatService playerStatService;
     private ProgressService progressService;
     private MilestoneService milestoneService;
     private SyncService syncService;
@@ -63,6 +65,7 @@ public final class JCodexPlugin extends JavaPlugin {
 
         // 서비스 초기화
         syncService = new SyncService(this);
+        playerStatService = new PlayerStatService(this);
         rewardService = new RewardService(this);
         progressService = new ProgressService(this);
         milestoneService = new MilestoneService(this);
@@ -70,6 +73,10 @@ public final class JCodexPlugin extends JavaPlugin {
 
         // 리스너 및 명령어 등록
         getServer().getPluginManager().registerEvents(new GUIInteractionListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerStatListener(playerStatService), this);
+
+        // 리로드 상황에서 이미 접속 중인 플레이어에게 스탯을 즉시 재적용
+        getServer().getOnlinePlayers().forEach(playerStatService::applyPersistentStats);
         Objects.requireNonNull(getCommand("도감")).setExecutor(new CodexCommand(this));
         Objects.requireNonNull(getCommand("도감설정")).setExecutor(new CodexAdminCommand(this));
         Objects.requireNonNull(getCommand("도감리로드")).setExecutor(new CodexReloadCommand(this));
@@ -117,6 +124,7 @@ public final class JCodexPlugin extends JavaPlugin {
     public RedisClient getRedisClient() { return redisClient; }
     public GuiManager getGuiManager() { return guiManager; }
     public CodexService getCodexService() { return codexService; }
+    public PlayerStatService getPlayerStatService() { return playerStatService; }
     public RewardService getRewardService() { return rewardService; }
     public ProgressService getProgressService() { return progressService; }
     public MilestoneService getMilestoneService() { return milestoneService; }

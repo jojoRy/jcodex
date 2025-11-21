@@ -96,6 +96,24 @@ public abstract class Gui implements InventoryHolder {
         return item;
     }
 
+    protected Material loadMaterialFromConfig(String path) {
+        if (guiConfig == null || !guiConfig.contains(path)) {
+            return null;
+        }
+
+        String materialName = guiConfig.getString(path);
+        if (materialName == null || materialName.trim().isEmpty()) {
+            return null;
+        }
+
+        Material material = Material.matchMaterial(materialName.toUpperCase());
+        if (material == null) {
+            Bukkit.getLogger().warning("[JCodex] gui.yml의 " + path + " 에 잘못된 아이템 종류 '" + materialName + "'가 설정되어 있습니다.");
+        }
+        return material;
+    }
+
+
     // gui.yml에서 메시지 가져오기
     protected String getMessage(String path, String... replacements) {
         String message = guiConfig.getString("messages." + path, "Message not found: " + path);

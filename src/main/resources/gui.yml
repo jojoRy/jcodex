@@ -27,7 +27,15 @@ items:
     lore: []
   # 카테고리 버튼 (선택되지 않았을 때)
   category_button:
-    # material은 CodexCategory Enum에서 자동으로 가져옵니다.
+    # material: 전체 카테고리 버튼에 공통으로 적용될 아이템 (선택 사항)
+    # materials: 각 카테고리별로 다른 아이템을 적용하고 싶을 때 사용 (선택 사항)
+    materials:
+      FARMER: WHEAT
+      MINER: DIAMOND_PICKAXE
+      FISHER: FISHING_ROD
+      COOK: COOKED_BEEF
+      WARRIOR: IRON_SWORD
+      MISC: ELYTRA
     custom_model_data: 0
     name: "§b%category_name%"
     lore:

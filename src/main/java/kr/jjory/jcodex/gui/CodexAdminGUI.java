@@ -142,13 +142,7 @@ public class CodexAdminGUI extends Gui {
                 CodexCategory category = categories[i];
                 // 카테고리 이름은 번역하지 않고 Enum의 displayName 사용
                 String path = (currentFilter == category) ? "items.category_button_selected" : "items.category_button";
-                ItemStack categoryItem = createGuiItem(path, "%category_name%", category.getDisplayName());
-
-                ItemMeta meta = categoryItem.getItemMeta();
-                if (!guiConfig.contains(path + ".material")) {
-                    categoryItem.setType(category.getIcon());
-                }
-                if (meta != null) categoryItem.setItemMeta(meta);
+                ItemStack categoryItem = createCategoryItem(path, category);
 
                 for (int slot : CATEGORY_SLOTS[i]) {
                     inventory.setItem(slot, categoryItem);
@@ -285,6 +279,40 @@ public class CodexAdminGUI extends Gui {
             if (i == slot) return true;
         }
         return false;
+    }
+
+    private ItemStack createCategoryItem(String path, CodexCategory category) {
+        ItemStack categoryItem = createGuiItem(path, "%category_name%", category.getDisplayName());
+
+        Material configuredMaterial = resolveCategoryMaterial(path, category);
+        if (configuredMaterial != null) {
+            categoryItem.setType(configuredMaterial);
+        } else if (!guiConfig.contains(path + ".material")) {
+            categoryItem.setType(category.getIcon());
+        }
+
+        ItemMeta meta = categoryItem.getItemMeta();
+        if (meta != null) {
+            categoryItem.setItemMeta(meta);
+        }
+
+        return categoryItem;
+    }
+
+    private Material resolveCategoryMaterial(String path, CodexCategory category) {
+        Material direct = loadMaterialFromConfig(path + ".materials." + category.name());
+        if (direct != null) {
+            return direct;
+        }
+
+        if (!"items.category_button".equals(path)) {
+            Material fallback = loadMaterialFromConfig("items.category_button.materials." + category.name());
+            if (fallback != null) {
+                return fallback;
+            }
+        }
+
+        return null;
     }
 }
 

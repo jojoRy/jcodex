@@ -1,11 +1,8 @@
 package kr.jjory.jcodex.service;
 
-import io.lumine.mythic.lib.api.player.MMOPlayerData;
-import io.lumine.mythic.lib.api.stat.modifier.StatModifier;
 import kr.jjory.jcodex.JCodexPlugin;
 import kr.jjory.jcodex.model.CodexItem;
 import kr.jjory.jcodex.model.RewardSpec;
-import net.Indyuce.mmoitems.api.player.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -19,9 +16,11 @@ import java.util.Map;
 public class RewardService {
 
     private final JCodexPlugin plugin;
+    private final PlayerStatService playerStatService;
 
     public RewardService(JCodexPlugin plugin) {
         this.plugin = plugin;
+        this.playerStatService = plugin.getPlayerStatService();
     }
 
     public void grantUnlockReward(Player player, CodexItem codexItem) {
@@ -46,19 +45,12 @@ public class RewardService {
 
         // 스탯 보상 (MMOItems)
         if (!reward.getStats().isEmpty() && Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-            PlayerData playerData = PlayerData.get(player.getUniqueId());
-            MMOPlayerData mmoPlayerData = playerData.getMMOPlayerData();
             for (Map.Entry<String, Double> entry : reward.getStats().entrySet()) {
                 String stat = entry.getKey();
                 double value = entry.getValue();
-
-                // 최종 수정: StatModifier(key, stat, value) 생성자를 사용하여 API 요구사항 충족
-                String modifierKey = "jcodex." + stat.toLowerCase();
-                StatModifier statModifier = new StatModifier(modifierKey, stat, value);
-                mmoPlayerData.getStatMap().getInstance(stat).addModifier(statModifier);
-
                 player.sendMessage("§a[JCodex] 보상으로 스탯 §b" + stat + " + " + value + "§a를 받았습니다.");
             }
+            playerStatService.incrementPersistentStats(player, reward.getStats());
         }
 
         // 명령어 보상
