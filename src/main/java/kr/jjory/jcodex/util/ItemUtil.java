@@ -109,7 +109,20 @@ public class ItemUtil {
     public static String getItemKey(ItemStack item) {
         if (item == null || item.getType().isAir()) return null;
 
-        // TODO: ItemsAdder, MMOItems 등의 커스텀 아이템 키 추출 로직 추가 필요
+        // 커스텀 아이템(ItemsAdder/MMOItems 등)은 번역 대상에서 제외합니다.
+        if (Bukkit.getPluginManager().isPluginEnabled("ItemsAdder")) {
+            if (CustomStack.byItemStack(item) != null) {
+                return null;
+            }
+        }
+
+        if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
+            NBTItem nbt = NBTItem.get(item);
+            if (nbt.hasType() && nbt.hasTag("MMOITEMS_ITEM_ID")) {
+                return null;
+            }
+        }
+
         // 현재는 바닐라 아이템의 Material 이름만 반환
         return item.getType().name();
     }

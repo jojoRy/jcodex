@@ -86,9 +86,16 @@ public class CodexService {
 
     private void removeItem(Player player, CodexItem codexItem) {
         ItemStack targetStack = ItemUtil.createItemFromCodexItem(codexItem);
-        for (ItemStack inventoryItem : player.getInventory().getContents()) {
+        for (int slot = 0; slot < player.getInventory().getSize(); slot++) {
+            ItemStack inventoryItem = player.getInventory().getItem(slot);
             if (inventoryItem != null && ItemUtil.isSimilar(inventoryItem, targetStack, codexItem.getItemId())) {
-                inventoryItem.setAmount(inventoryItem.getAmount() - 1);
+                int newAmount = inventoryItem.getAmount() - 1;
+                if (newAmount > 0) {
+                    inventoryItem.setAmount(newAmount);
+                    player.getInventory().setItem(slot, inventoryItem);
+                } else {
+                    player.getInventory().setItem(slot, null);
+                }
                 return;
             }
         }
