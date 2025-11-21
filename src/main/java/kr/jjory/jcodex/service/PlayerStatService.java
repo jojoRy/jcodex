@@ -51,6 +51,38 @@ public class PlayerStatService {
         CompletableFuture.allOf(futures).thenRun(() -> applyPersistentStats(player));
     }
 
+    public CompletableFuture<Void> decrementPersistentStats(UUID uuid, Map<String, Double> stats) {
+        if (!isMmoItemsAvailable() || stats.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        CompletableFuture<?>[] futures = stats.entrySet().stream()
+                .map(entry -> repository.decrementStat(uuid, entry.getKey(), entry.getValue()))
+                .toArray(CompletableFuture[]::new);
+
+        return CompletableFuture.allOf(futures).thenRun(() -> {
+            Player online = Bukkit.getPlayer(uuid);
+            if (online != null) {
+                applyPersistentStats(online);
+            }
+        });
+    }
+
+    public CompletableFuture<Void> removeStatsForDeletedItem(Map<String, Double> stats, Set<UUID> affectedPlayers) {
+        if (stats.isEmpty() || affectedPlayers.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        CompletableFuture<?>[] futures = affectedPlayers.stream()
+                .map(uuid -> decrementPersistentStats(uuid, stats))
+                .toArray(CompletableFuture[]::new);
+
+        return CompletableFuture.allOf(futures).thenRun(() -> Bukkit.getScheduler().runTask(plugin, () ->
+                Bukkit.getOnlinePlayers().stream()
+                        .filter(player -> affectedPlayers.contains(player.getUniqueId()))
+                        .forEach(this::applyPersistentStats)
+        ));
+    }
+
     private void ensureStatsApplied(Player player, Map<String, Double> stats) {
         if (!player.isOnline()) {
             return;

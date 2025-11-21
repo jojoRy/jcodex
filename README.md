@@ -53,5 +53,6 @@ JCodex는 마인크래프트 서버용 도감/수집 플러그인으로, 플레�
 - SUB 서버는 Redis 메시지 또는 폴백 주기로 최신 데이터를 가져와 플레이어에게 동일한 도감/보상을 제공합니다.【F:src/main/resources/config.yml†L15-L27】【F:src/main/java/kr/jjory/jcodex/config/MainConfig.java†L20-L43】
 
 ## MMOItems 스탯 보상
-플레이어가 접속하면 부여된 MMOItems 스탯이 누락되지 않도록 확인 후 재적용하며, 이미 적용된 스탯은 중복 적용되지 않도록 관리합니다.【F:src/main/java/kr/jjory/jcodex/JCodexPlugin.java†L53-L76】【F:src/main/java/kr/jjory/jcodex/service/PlayerStatService.java†L24-L72】
+플레이어가 접속하면 부여된 MMOItems 스탯이 누락되지 않도록 확인 후 재적용하며, 이미 적용된 스탯은 중복 적용되지 않도록 관리합니다.【F:src/main/java/kr/jjory/jcodex/JCodexPlugin.java†L53-L76】【F:src/main/java/kr/jjory/jcodex/service/PlayerStatService.java†L24-L96】
+관리자가 도감 항목을 삭제하면 해당 항목을 등록했던 모든 플레이어의 누적 스탯을 차감하고, 온라인 플레이어에게 즉시 재적용하여 삭제된 보상이 남지 않습니다.【F:src/main/java/kr/jjory/jcodex/gui/CodexAdminGUI.java†L137-L180】【F:src/main/java/kr/jjory/jcodex/service/PlayerStatService.java†L62-L96】
 

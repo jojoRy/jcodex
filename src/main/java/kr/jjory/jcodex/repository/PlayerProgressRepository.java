@@ -73,6 +73,39 @@ public class PlayerProgressRepository {
         });
     }
 
+    public CompletableFuture<Set<UUID>> findPlayersByItemId(String itemId) {
+        return CompletableFuture.supplyAsync(() -> {
+            Set<UUID> players = new HashSet<>();
+            String sql = "SELECT uuid FROM player_codex WHERE item_id = ?";
+            try (Connection conn = plugin.getDatabaseManager().getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, itemId);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        players.add(UUID.fromString(rs.getString("uuid")));
+                    }
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().severe("아이템 등록 플레이어 조회 중 오류: " + e.getMessage());
+            }
+            return players;
+        });
+    }
+
+    public CompletableFuture<Void> deleteRegistrationsByItem(String itemId) {
+        return CompletableFuture.runAsync(() -> {
+            String sql = "DELETE FROM player_codex WHERE item_id = ?";
+            try (Connection conn = plugin.getDatabaseManager().getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, itemId);
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().severe("아이템 등록 기록 삭제 중 오류: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     public CompletableFuture<Void> claimMilestone(UUID uuid, int milestoneId) {
         return CompletableFuture.runAsync(() -> {
             String sql = "INSERT INTO player_milestones (uuid, milestone_id) VALUES (?, ?)";
