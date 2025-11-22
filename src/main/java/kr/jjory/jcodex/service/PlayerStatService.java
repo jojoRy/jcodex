@@ -129,15 +129,17 @@ public class PlayerStatService {
     }
 
     private void removeStaleEntries(Set<String> activeStats, MMOPlayerData data, PersistentDataContainer container) {
-        data.getStatMap().getInstances().values().forEach(instance ->
+        data.getStatMap().getInstances().forEach(instance ->
                 instance.getModifiers().removeIf(modifier -> {
                     if (!modifier.getKey().startsWith("jcodex.")) {
                         return false;
                     }
+
                     String statName = modifier.getKey().substring("jcodex.".length());
                     if (activeStats.contains(statName.toLowerCase())) {
                         return false;
                     }
+
                     NamespacedKey key = new NamespacedKey(plugin, modifier.getKey());
                     container.remove(key);
                     return true;
