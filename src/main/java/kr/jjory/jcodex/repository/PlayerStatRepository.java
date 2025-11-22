@@ -59,7 +59,7 @@ public class PlayerStatRepository {
 
     public CompletableFuture<Void> decrementStat(UUID uuid, String stat, double value) {
         return CompletableFuture.runAsync(() -> {
-            String upsertSql = "INSERT INTO player_stats (uuid, stat, value) VALUES (?, ?, 0) " +
+            String upsertSql = "INSERT INTO player_stats (uuid, stat, value) VALUES (?, ?, ?) " +
                     "ON DUPLICATE KEY UPDATE value = GREATEST(value - VALUES(value), 0)";
             String cleanupSql = "DELETE FROM player_stats WHERE uuid = ? AND stat = ? AND value <= 0";
             try (Connection conn = plugin.getDatabaseManager().getConnection();
